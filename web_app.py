@@ -4,6 +4,7 @@ import threading
 import time
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from streamlit_keypress import key_press_events
 
 # Page configuration
@@ -220,7 +221,8 @@ class ListenyKeyboard:
     
     def save_note(self, note_content):
         """Save note to today's markdown file"""
-        today = datetime.now()
+        chicago_tz = ZoneInfo("America/Chicago")
+        today = datetime.now(chicago_tz)
         filename = today.strftime('%Y-%m-%d') + '.md'
         filepath = os.path.join(st.session_state.notes_dir, filename)
         
@@ -518,7 +520,8 @@ class ListenyKeyboard:
         st.markdown("### 📝 Today's Notes")
         
         # Load today's notes
-        today = datetime.now()
+        chicago_tz = ZoneInfo("America/Chicago")
+        today = datetime.now(chicago_tz)
         filename = today.strftime('%Y-%m-%d') + '.md'
         filepath = os.path.join(st.session_state.notes_dir, filename)
         

@@ -10,6 +10,7 @@ import math
 import random
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 class Listeny:
     def __init__(self):
@@ -239,7 +240,8 @@ Current working directory: /Users/adityakarnam/Projects/listen.me"""
     
     def save_note(self, note_content):
         """Save note to today's markdown file"""
-        today = datetime.now()
+        chicago_tz = ZoneInfo("America/Chicago")
+        today = datetime.now(chicago_tz)
         filename = today.strftime('%Y-%m-%d') + '.md'
         filepath = os.path.join(self.notes_dir, filename)
         

@@ -31,6 +31,16 @@ function App() {
   // Set up keyboard listeners
   useEffect(() => {
     const handleKeyDown = (e) => {
+      // Check if user is typing in textarea or input
+      const activeElement = document.activeElement;
+      const isTyping = activeElement && (
+        activeElement.tagName === 'TEXTAREA' || 
+        activeElement.tagName === 'INPUT'
+      );
+      
+      // Don't intercept keys when typing in text areas
+      if (isTyping) return;
+
       if (e.code === 'Space' && !e.repeat && !spacebarPressedRef.current) {
         e.preventDefault();
         spacebarPressedRef.current = true;
@@ -47,6 +57,16 @@ function App() {
     };
 
     const handleKeyUp = (e) => {
+      // Check if user is typing in textarea or input
+      const activeElement = document.activeElement;
+      const isTyping = activeElement && (
+        activeElement.tagName === 'TEXTAREA' || 
+        activeElement.tagName === 'INPUT'
+      );
+      
+      // Don't intercept keys when typing in text areas
+      if (isTyping) return;
+
       if (e.code === 'Space') {
         e.preventDefault();
         if (spacebarPressedRef.current && recording) {
@@ -181,7 +201,10 @@ function App() {
   const addManualNote = async () => {
     if (manualNote.trim()) {
       try {
-        await axios.post(`${API_BASE}/manual-note`, { text: manualNote });
+        await axios.post(`${API_BASE}/manual-note`, { 
+          text: manualNote,
+          action: 'manual'
+        });
         setMessage('Note added successfully!');
         setManualNote('');
         fetchNotes();

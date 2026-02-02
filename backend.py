@@ -4,6 +4,7 @@ from pydantic import BaseModel
 import speech_recognition as sr
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import uvicorn
 from typing import Optional
 import tempfile
@@ -54,7 +55,8 @@ class ListenyAPI:
 
     def save_note(self, note_content):
         """Save note to today's markdown file"""
-        today = datetime.now()
+        chicago_tz = ZoneInfo("America/Chicago")
+        today = datetime.now(chicago_tz)
         filename = today.strftime('%Y-%m-%d') + '.md'
         filepath = os.path.join(self.notes_dir, filename)
 
@@ -172,7 +174,8 @@ async def get_status():
 @app.get("/api/notes")
 async def get_notes():
     # Get today's notes
-    today = datetime.now()
+    chicago_tz = ZoneInfo("America/Chicago")
+    today = datetime.now(chicago_tz)
     filename = today.strftime('%Y-%m-%d') + '.md'
     filepath = os.path.join(listeny.notes_dir, filename)
 
@@ -201,7 +204,8 @@ async def summarize_notes():
     """Get today's notes and summarize them using Ollama"""
     try:
         # Get today's notes
-        today = datetime.now()
+        chicago_tz = ZoneInfo("America/Chicago")
+        today = datetime.now(chicago_tz)
         filename = today.strftime('%Y-%m-%d') + '.md'
         filepath = os.path.join(listeny.notes_dir, filename)
 
