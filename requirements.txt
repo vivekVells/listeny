@@ -5,3 +5,6 @@ pyaudio
 python-multipart
 pydub
 ollama
+pyttsx3
+streamlit
+streamlit-keypress
