@@ -2,6 +2,8 @@
 
 A voice-activated AI assistant that helps with development tasks and project management through natural language commands.
 
+<img width="1512" height="830" alt="image" src="https://github.com/user-attachments/assets/c7401a9d-1806-471e-aa0d-3db10c270afb" />
+
 ## Features
 
 ### Desktop Version (listeny.py)
