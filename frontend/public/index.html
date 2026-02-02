@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#000000" />
+  <meta name="description" content="Listeny - Voice Notes App" />
+  <title>Listeny - Voice Notes</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+  <script type="module" src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script type="module" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script type="module" src="https://unpkg.com/axios@1/dist/axios.min.js"></script>
+  <script type="module">
+    // Simple React App without build step
+    const { useState, useEffect, useRef } = React;
+    const { createRoot } = ReactDOM;
+
+    function App() {
+      const [status, setStatus] = useState('idle');
+      const [mode, setMode] = useState('note');
+      const [notes, setNotes] = useState([]);
+      const [message, setMessage] = useState('');
+      const [manualNote, setManualNote] = useState('');
+      const [recording, setRecording] = useState(false);
+      const [todayNotes, setTodayNotes] = useState('');
+      const [notesCount, setNotesCount] = useState(0);
+      const [keyPressed, setKeyPressed] = useState('');
+
+      const spacebarPressedRef = useRef(false);
+      const API_BASE = 'http://localhost:8000/api';
+
+      useEffect(() => {
+        fetchNotes();
+        getStatus();
+        
+        const handleKeyDown = (e) => {
+          if (e.code === 'Space' && !e.repeat) {
+            e.preventDefault();
+            if (!spacebarPressedRef.current) {
+              spacebarPressedRef.current = true;
+              toggleRecording();
+            }
+          }
+        };
+
+        const handleKeyUp = (e) => {
+          if (e.code === 'Space') {
+            e.preventDefault();
+            spacebarPressedRef.current = false;
+            if (recording) {
+              toggleRecording();
+            }
+          }
+        };
+
+        const handleRKeyDown = (e) => {
+          if (e.key === 'r' || e.key === 'R') {
+            e.preventDefault();
+            if (!recording) {
+              toggleRecording();
+            }
+          }
+        };
+
+        const handleSKeyDown = (e) => {
+          if (e.key === 's' || e.key === 'S') {
+            e.preventDefault();
+            if (recording) {
+              toggleRecording();
+            }
+          }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        document.addEventListener('keyup', handleKeyUp);
+        document.addEventListener('keydown', handleRKeyDown);
+        document.addEventListener('keydown', handleSKeyDown);
+
+        return () => {
+          document.removeEventListener('keydown', handleKeyDown);
+          document.removeEventListener('keyup', handleKeyUp);
+          document.removeEventListener('keydown', handleRKeyDown);
+          document.removeEventListener('keydown', handleSKeyDown);
+        };
+      }, [recording]);
+
+      const toggleRecording = async () => {
+        try {
+          if (!recording) {
+            setMessage('Recording...');
+            setRecording(true);
+            await axios.post(`${API_BASE}/start`);
+          } else {
+            setMessage('Processing...');
+            setRecording(false);
+            await axios.post(`${API_BASE}/stop`);
+          }
+        } catch (error) {
+          console.error('Error toggling recording:', error);
+          setMessage('Error: ' + error.message);
+        }
+      };
+
+      const fetchNotes = async () => {
+        try {
+          const response = await axios.get(`${API_BASE}/notes`);
+          setTodayNotes(response.data.notes || '');
+          fetchStatus();
+        } catch (error) {
+          console.error('Error fetching notes:', error);
+        }
+      };
+
+      const fetchStatus = async () => {
+        try {
+          const response = await axios.get(`${API_BASE}/status`);
+          setStatus(response.data.status);
+          setNotesCount(response.data.notes_count || 0);
+          setMode(response.data.note_mode ? 'note' : 'assistant');
+        } catch (error) {
+          console.error('Error fetching status:', error);
+        }
+      };
+
+      const addManualNote = async () => {
+        if (manualNote.trim()) {
+          try {
+            await axios.post(`${API_BASE}/manual-note`, { text: manualNote });
+            setMessage('Note added successfully!');
+            setManualNote('');
+            fetchNotes();
+          } catch (error) {
+            console.error('Error adding manual note:', error);
+          }
+        }
+      };
+
+      const formatTodayNotes = (notesText) => {
+        if (!notesText) return React.createElement('p', null, 'No notes today yet.');
+        
+        return notesText.split('\n').map((line, index) => {
+          if (line.startsWith('- **')) {
+            return React.createElement('div', {
+              key: index,
+              style: {
+                backgroundColor: '#2a2a2a',
+                padding: '10px',
+                margin: '5px 0',
+                borderRadius: '5px',
+                borderLeft: '4px solid #4a90e2'
+              }
+            }, React.createElement('span', { style: { color: '#4a90e2' } }, line));
+          }
+          return React.createElement('div', { key: index }, line);
+        });
+      };
+
+      return React.createElement('div', { className: 'App' }, 
+        React.createElement('header', { className: 'App-header' }, 
+          React.createElement('h1', null, '🎙️ Listeny - Voice Notes'),
+          React.createElement('div', { className: 'mode-indicator' },
+            React.createElement('span', { 
+              className: mode === 'note' ? 'note-mode' : 'assistant-mode'
+            }, mode === 'note' ? '📝 Note Mode (Direct)' : '🤖 Assistant Mode (Commands)')
+          )
+        ),
+        React.createElement('div', { className: 'keyboard-hint' },
+          '⌨️ KEYBOARD: SPACEBAR=Toggle | R=Record | S=Stop',
+          keyPressed && React.createElement('div', { className: 'key-feedback' },
+            React.createElement('i', { className: 'fas fa-keyboard' }), ` Key: ${keyPressed}`)
+        ),
+        React.createElement('main', { className: 'App-main' },
+          React.createElement('div', { className: 'recording-section' },
+            React.createElement('button', {
+              className: `record-button ${recording ? 'recording' : ''}`,
+              onMouseDown: toggleRecording,
+              disabled: recording
+            }, recording ? '🔴 STOP RECORDING' : '🎙️ RECORD')
+          ),
+          React.createElement('div', { className: 'status-section' },
+            React.createElement('h3', null, 'Status'),
+            status === 'noted' ? 
+              React.createElement('div', { className: 'noted-message' }, '✅ NOTED!')
+            : recording ?
+              React.createElement('div', { className: 'listening' },
+                React.createElement('h3', null, '🎙️ RECORDING...'),
+                React.createElement('div', { className: 'wave-container' },
+                  React.createElement('span', { className: 'wave' }, '🌊'),
+                  React.createElement('span', { className: 'wave', style: { animationDelay: '0.2s' } }, '🌊'),
+                  React.createElement('span', { className: 'wave', style: { animationDelay: '0.4s' } }, '🌊')
+                ),
+                React.createElement('p', null, React.createElement('em', null, 'Click STOP or release SPACEBAR'))
+              )
+            : React.createElement('div', { className: 'status-box' }, message || 'Ready to record')
+          )
+        ),
+        React.createElement('section', { className: 'instructions-section' },
+          React.createElement('h2', null, '📖 How to Use'),
+          mode === 'note' ?
+            React.createElement('div', { className: 'instructions' },
+              React.createElement('h4', null, '📝 Note Mode (Push-to-Talk)'),
+              React.createElement('h5', null, '⌨️ SPACEBAR (Recommended)'),
+              React.createElement('ol', null,
+                React.createElement('li', null, React.createElement('strong', null, 'Press SPACEBAR'), ' → Recording starts'),
+                React.createElement('li', null, React.createElement('strong', null, 'Speak your note'), ' → "meeting with team at 3pm"'),
+                React.createElement('li', null, React.createElement('strong', null, 'Release SPACEBAR'), ' → Recording stops'),
+                React.createElement('li', null, React.createElement('strong', null, '✅ NOTED!'), ' → Note saved automatically')
+              ),
+              React.createElement('h5', null, '🖱️ Alternative Keys'),
+              React.createElement('p', null, React.createElement('strong', null, 'R'), ' to start, ', React.createElement('strong', null, 'S'), ' to stop')
+            )
+            :
+            React.createElement('div', { className: 'instructions' },
+              React.createElement('h4', null, '🤖 Assistant Mode'),
+              React.createElement('p', null, React.createElement('strong', null, 'Commands work like:')),
+              React.createElement('ul', null,
+                React.createElement('li', null, '"Note this: meeting with team at 3pm"'),
+                React.createElement('li', null, '"Remember that I need to review the PR"'),
+                React.createElement('li', null, '"Take a note: call client tomorrow"')
+              ),
+              React.createElement('p', null, 'Use SPACEBAR or R/S keys to record your command.')
+            )
+          )
+        ),
+        React.createElement('section', { className: 'notes-section' },
+          React.createElement('h2', null, `📝 Today's Notes (${notesCount})`),
+          React.createElement('div', { className: 'notes-container' }, formatTodayNotes(todayNotes)),
+          React.createElement('div', { className: 'manual-note-section' },
+            React.createElement('h3', null, '✍️ Add Note Manually'),
+            React.createElement('textarea', {
+              value: manualNote,
+              onChange: (e) => setManualNote(e.target.value),
+              placeholder: 'Enter your note here...',
+              rows: 3
+            }),
+            React.createElement('button', { onClick: addManualNote }, 'Add Note')
+          )
+        )
+      );
+    }
+
+    createRoot(document.getElementById('root')).render(React.createElement(App));
+  </script>
+</body>
+</html>
